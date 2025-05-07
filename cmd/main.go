@@ -4,9 +4,9 @@ import (
 	"context"
 	"flag"
 
-	"github.com/DOs0x12/TeleBot/client/v2/broker"
 	"github.com/sirupsen/logrus"
 
+	infraBroker "github.com/DOs0x12/FileStorage/internal/infrastructure/broker"
 	"github.com/DOs0x12/FileStorage/internal/infrastructure/config"
 )
 
@@ -23,7 +23,7 @@ func main() {
 
 	appCtx := context.Background()
 	serviceName := "storage-of-receipts"
-	broker, err := broker.NewKafkaBroker(appCtx, conf.KafkaAddress, serviceName)
+	broker, err := infraBroker.NewBroker(appCtx, conf.KafkaAddress, serviceName)
 	if err != nil {
 		logrus.Error("Failed to create a broker: ", err)
 
