@@ -24,7 +24,7 @@ func main() {
 	}
 
 	appCtx := context.Background()
-	serviceName := "storage-of-receipts"
+	serviceName := "receipt-storage"
 	broker, err := brokerInfra.NewBroker(appCtx, conf.KafkaAddress, serviceName)
 	if err != nil {
 		logrus.Error("Failed to create a broker: ", err)
