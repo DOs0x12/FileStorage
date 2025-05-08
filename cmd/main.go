@@ -37,6 +37,7 @@ func main() {
 	comm := brokerEnt.CommandData{Name: cn, Description: cd}
 	err = broker.RegisterCommand(appCtx, comm, serviceName)
 	if err != nil {
+		logrus.Errorf("Failed to register a command %v in the bot: %v", cn, err)
 
 		return
 	}
