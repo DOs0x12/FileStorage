@@ -6,7 +6,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	infraBroker "github.com/DOs0x12/FileStorage/internal/infrastructure/broker"
+	"github.com/DOs0x12/FileStorage/internal/app"
+	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
+	brokerInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/broker"
 	"github.com/DOs0x12/FileStorage/internal/infrastructure/config"
 )
 
@@ -23,11 +25,21 @@ func main() {
 
 	appCtx := context.Background()
 	serviceName := "storage-of-receipts"
-	broker, err := infraBroker.NewBroker(appCtx, conf.KafkaAddress, serviceName)
+	broker, err := brokerInfra.NewBroker(appCtx, conf.KafkaAddress, serviceName)
 	if err != nil {
 		logrus.Error("Failed to create a broker: ", err)
 
 		return
 	}
 
+	cn := "/send"
+	cd := "Send a receipt file"
+	comm := brokerEnt.CommandData{Name: cn, Description: cd}
+	err = broker.RegisterCommand(appCtx, comm, serviceName)
+	if err != nil {
+
+		return
+	}
+
+	app.Serve(appCtx, broker)
 }

@@ -11,5 +11,5 @@ type MessageBroker interface {
 	StartGetData(ctx context.Context) <-chan brokerEnt.BrokerData
 	Commit(ctx context.Context, msgUuid uuid.UUID) error
 	SendData(ctx context.Context, data brokerEnt.BrokerData) error
-	Close() error
+	Stop()
 }
