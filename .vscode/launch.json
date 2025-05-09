@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}/cmd/",
-            "args": ["--conf", "~/receipt-storage/config.yml"],
+            "args": ["--conf", "/home/osetrov/receipt-storage/config.yml"],
             "asRoot": true,
             "console": "integratedTerminal"
         }
