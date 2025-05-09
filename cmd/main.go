@@ -32,7 +32,7 @@ func main() {
 		return
 	}
 
-	cn := "/send"
+	cn := "send"
 	cd := "Send a receipt file"
 	comm := brokerEnt.CommandData{Name: cn, Description: cd}
 	err = broker.RegisterCommand(appCtx, comm, serviceName)
