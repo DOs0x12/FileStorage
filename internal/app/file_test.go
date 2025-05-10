@@ -13,6 +13,7 @@ func TestExtractFileName(t *testing.T) {
 		expected string
 	}{
 		{"name with number", "3. Some name", "Some name"},
+		{"name with big number", "30000. Some name", "Some name"},
 		{"name without number", "Some name", "Some name"},
 		{"empty name", "", ""},
 	}

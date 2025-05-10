@@ -2,7 +2,7 @@ package app
 
 import "regexp"
 
-var nameRegex = regexp.MustCompile(`^(?:\d\.\s)?(.+)$`)
+var nameRegex = regexp.MustCompile(`^(?:\d+\.\s)?(.+)$`)
 
 func ExtractFileName(val string) string {
 	matches := nameRegex.FindStringSubmatch(val)
