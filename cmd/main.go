@@ -10,11 +10,19 @@ import (
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/broker"
 	"github.com/DOs0x12/FileStorage/internal/infrastructure/config"
+	wrInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/file"
 )
 
 func main() {
 	configPath := flag.String("conf", "../etc/config.yml", "Config path.")
+	folderPath := flag.String("folder", "", "File storage folder path.")
 	flag.Parse()
+
+	if *folderPath == "" {
+		flag.PrintDefaults()
+
+		return
+	}
 
 	conf, err := config.LoadConfig(*configPath)
 	if err != nil {
@@ -42,5 +50,7 @@ func main() {
 		return
 	}
 
-	app.Serve(appCtx, broker)
+	wr := wrInfra.NewWriter(*folderPath)
+
+	app.Serve(appCtx, broker, wr)
 }

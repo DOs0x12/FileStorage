@@ -2,19 +2,23 @@ package app
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
+	wrInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
 	"github.com/sirupsen/logrus"
 )
 
-func Serve(ctx context.Context, broker brokerInt.MessageBroker) {
+func Serve(ctx context.Context, broker brokerInt.MessageBroker, fileWriter wrInt.Writer) {
 	dataChan := broker.StartGetData(ctx)
 
 	for {
 		select {
 		case d := <-dataChan:
-			processState(ctx, d, broker)
+			processState(ctx, d, broker, fileWriter)
 			err := broker.Commit(ctx, d.MessageUuid)
 			if err != nil {
 				logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
@@ -35,7 +39,17 @@ const (
 
 var sessions = make(map[int64]state)
 
-func processState(ctx context.Context, brokerData brokerEnt.BrokerData, broker brokerInt.MessageBroker) {
+type FileDto struct {
+	Name,
+	Data string
+}
+
+func processState(
+	ctx context.Context,
+	brokerData brokerEnt.BrokerData,
+	broker brokerInt.MessageBroker,
+	fileWriter wrInt.Writer,
+) {
 	currSt, ok := sessions[brokerData.ChatID]
 	if !ok {
 		currSt = comm
@@ -49,6 +63,10 @@ func processState(ctx context.Context, brokerData brokerEnt.BrokerData, broker b
 			sessions[brokerData.ChatID] = data
 		}
 	case data:
+		err := processFileData(brokerData.Value, fileWriter)
+		if err != nil {
+			logrus.Error("Failed to process file data: ", err)
+		}
 		delete(sessions, brokerData.ChatID)
 	}
 }
@@ -72,4 +90,35 @@ func sendMsgWithErrHandling(
 	}
 
 	return true
+}
+
+func processFileData(rawData string, fileWriter wrInt.Writer) error {
+	if rawData == "" {
+		return errors.New("data is empty")
+	}
+
+	var dto FileDto
+	err := json.Unmarshal([]byte(rawData), &dto)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal file data: %w", err)
+	}
+
+	fName := ExtractFileName(dto.Name)
+	if fName == "" {
+		return fmt.Errorf("file name '%v' in wrong format", dto.Name)
+	}
+
+	fNum, err := ExtractNumber(dto.Name)
+	if err != nil {
+		return err
+	}
+
+	_ = fNum
+
+	err = fileWriter.Write(dto.Data, fName)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
