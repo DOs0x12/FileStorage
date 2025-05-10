@@ -31,7 +31,6 @@ type state int
 const (
 	comm state = iota
 	data
-	name
 )
 
 var sessions = make(map[int64]state)
@@ -42,10 +41,7 @@ func processState(ctx context.Context, brokerData brokerEnt.BrokerData, broker b
 		currSt = comm
 	}
 
-	const (
-		sendingFileMessage = "Отправь файл для загрузки в хранилище"
-		fileNameMessage    = "Напиши имя для объекта в хранилище"
-	)
+	const sendingFileMessage = "Отправь файл для загрузки в хранилище"
 
 	switch currSt {
 	case comm:
@@ -53,10 +49,6 @@ func processState(ctx context.Context, brokerData brokerEnt.BrokerData, broker b
 			sessions[brokerData.ChatID] = data
 		}
 	case data:
-		if sendMsgWithErrHandling(ctx, brokerData, broker, fileNameMessage) {
-			sessions[brokerData.ChatID] = name
-		}
-	case name:
 		delete(sessions, brokerData.ChatID)
 	}
 }
