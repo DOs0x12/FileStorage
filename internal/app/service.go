@@ -13,24 +13,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Serve(
-	ctx context.Context,
-	broker brokerInt.MessageBroker,
-	fileWriter fileInt.Writer,
-	extractor fileInt.Extractor,
-	storage storageInt.ReferenceStorage,
-) {
-	dataChan := broker.StartGetData(ctx)
+type ServiceSet struct {
+	Broker     brokerInt.MessageBroker
+	FileWriter fileInt.Writer
+	Extractor  fileInt.Extractor
+	Storage    storageInt.ReferenceStorage
+}
+
+func Serve(ctx context.Context, servSet ServiceSet) {
+	dataChan := servSet.Broker.StartGetData(ctx)
 
 	for d := range dataChan {
-		processState(ctx, d, broker, fileWriter, extractor, storage)
-		err := broker.Commit(ctx, d.MessageUuid)
+		processState(ctx, d, servSet)
+		err := servSet.Broker.Commit(ctx, d.MessageUuid)
 		if err != nil {
 			logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
 		}
 	}
 
-	broker.Stop()
+	servSet.Broker.Stop()
 	logrus.Info("The application was stopped")
 }
 
@@ -51,10 +52,7 @@ type FileDto struct {
 func processState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
-	broker brokerInt.MessageBroker,
-	fileWriter fileInt.Writer,
-	extractor fileInt.Extractor,
-	storage storageInt.ReferenceStorage,
+	servSet ServiceSet,
 ) {
 	currSt, ok := sessions[brokerData.ChatID]
 	if !ok {
@@ -65,11 +63,11 @@ func processState(
 
 	switch currSt {
 	case comm:
-		if sendMsgWithErrHandling(ctx, brokerData, broker, sendingFileMessage) {
+		if sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, sendingFileMessage) {
 			sessions[brokerData.ChatID] = data
 		}
 	case data:
-		err := processFileData(ctx, brokerData.Value, fileWriter, extractor, storage)
+		err := processFileData(ctx, brokerData.Value, servSet)
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)
 		}
@@ -101,9 +99,7 @@ func sendMsgWithErrHandling(
 func processFileData(
 	ctx context.Context,
 	rawData string,
-	fileWriter fileInt.Writer,
-	extractor fileInt.Extractor,
-	storage storageInt.ReferenceStorage,
+	servSet ServiceSet,
 ) error {
 	if rawData == "" {
 		return errors.New("data is empty")
@@ -115,22 +111,22 @@ func processFileData(
 		return fmt.Errorf("failed to unmarshal file data: %w", err)
 	}
 
-	fName := extractor.ExtractFileName(dto.Name)
+	fName := servSet.Extractor.ExtractFileName(dto.Name)
 	if fName == "" {
 		return fmt.Errorf("file name '%v' in wrong format", dto.Name)
 	}
 
-	fNum, err := extractor.ExtractNumber(dto.Name)
+	fNum, err := servSet.Extractor.ExtractNumber(dto.Name)
 	if err != nil {
 		return err
 	}
 
-	err = fileWriter.Write(dto.Data, fName)
+	err = servSet.FileWriter.Write(dto.Data, fName)
 	if err != nil {
 		return err
 	}
 
-	err = storage.Insert(ctx, fNum, fName)
+	err = servSet.Storage.Insert(ctx, fNum, fName)
 	if err != nil {
 		return err
 	}

@@ -68,5 +68,6 @@ func main() {
 		return
 	}
 
-	app.Serve(appCtx, broker, wr, ext, st)
+	sSet := app.ServiceSet{Broker: broker, FileWriter: wr, Extractor: ext, Storage: st}
+	app.Serve(appCtx, sSet)
 }
