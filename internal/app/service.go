@@ -15,19 +15,16 @@ import (
 func Serve(ctx context.Context, broker brokerInt.MessageBroker, fileWriter wrInt.Writer) {
 	dataChan := broker.StartGetData(ctx)
 
-	for {
-		select {
-		case d := <-dataChan:
-			processState(ctx, d, broker, fileWriter)
-			err := broker.Commit(ctx, d.MessageUuid)
-			if err != nil {
-				logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
-			}
-		case <-ctx.Done():
-			broker.Stop()
-			logrus.Info("The application was stopped")
+	for d := range dataChan {
+		processState(ctx, d, broker, fileWriter)
+		err := broker.Commit(ctx, d.MessageUuid)
+		if err != nil {
+			logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
 		}
 	}
+
+	broker.Stop()
+	logrus.Info("The application was stopped")
 }
 
 type state int
