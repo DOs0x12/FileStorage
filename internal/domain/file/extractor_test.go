@@ -1,4 +1,4 @@
-package app
+package file
 
 import (
 	"testing"
@@ -21,7 +21,8 @@ func TestExtractFileName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExtractFileName(tt.fileName)
+			ext := Extractor{}
+			result := ext.ExtractFileName(tt.fileName)
 			assert.Equal(t, tt.expected, result, "not expected name value")
 		})
 	}
@@ -43,7 +44,8 @@ func TestExtractNumber(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ExtractNumber(tt.fileName)
+			ext := Extractor{}
+			result, err := ext.ExtractNumber(tt.fileName)
 			if tt.wantErr {
 				require.Error(t, err)
 				assert.EqualError(t, err, tt.expErr.Error(), "not expected error")

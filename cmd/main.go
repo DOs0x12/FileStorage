@@ -7,10 +7,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/DOs0x12/FileStorage/internal/app"
+	fileDom "github.com/DOs0x12/FileStorage/internal/domain/file"
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/broker"
 	"github.com/DOs0x12/FileStorage/internal/infrastructure/config"
-	wrInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/file"
+	fileInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/file"
 )
 
 func main() {
@@ -50,7 +51,8 @@ func main() {
 		return
 	}
 
-	wr := wrInfra.NewWriter(*folderPath)
+	wr := fileInfra.NewWriter(*folderPath)
+	ext := fileDom.Extractor{}
 
-	app.Serve(appCtx, broker, wr)
+	app.Serve(appCtx, broker, wr, ext)
 }

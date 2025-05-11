@@ -1,4 +1,4 @@
-package app
+package file
 
 import (
 	"errors"
@@ -7,9 +7,11 @@ import (
 	"strconv"
 )
 
+type Extractor struct{}
+
 var nameRegex = regexp.MustCompile(`^(?:\d+\.\s)?(.+)$`)
 
-func ExtractFileName(val string) string {
+func (Extractor) ExtractFileName(val string) string {
 	matches := nameRegex.FindStringSubmatch(val)
 	if len(matches) > 1 {
 		return matches[1]
@@ -21,7 +23,7 @@ func ExtractFileName(val string) string {
 var numRegex = regexp.MustCompile(`^(\d+)\.\s`)
 var ErrWrongFormat = errors.New("string is in wrong format")
 
-func ExtractNumber(val string) (int64, error) {
+func (Extractor) ExtractNumber(val string) (int64, error) {
 	matches := numRegex.FindStringSubmatch(val)
 	if len(matches) > 1 {
 		num, err := strconv.ParseInt(matches[1], 0, 64)

@@ -8,15 +8,20 @@ import (
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
-	wrInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
+	fileInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
 	"github.com/sirupsen/logrus"
 )
 
-func Serve(ctx context.Context, broker brokerInt.MessageBroker, fileWriter wrInt.Writer) {
+func Serve(
+	ctx context.Context,
+	broker brokerInt.MessageBroker,
+	fileWriter fileInt.Writer,
+	extractor fileInt.Extractor,
+) {
 	dataChan := broker.StartGetData(ctx)
 
 	for d := range dataChan {
-		processState(ctx, d, broker, fileWriter)
+		processState(ctx, d, broker, fileWriter, extractor)
 		err := broker.Commit(ctx, d.MessageUuid)
 		if err != nil {
 			logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
@@ -45,7 +50,8 @@ func processState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
 	broker brokerInt.MessageBroker,
-	fileWriter wrInt.Writer,
+	fileWriter fileInt.Writer,
+	extractor fileInt.Extractor,
 ) {
 	currSt, ok := sessions[brokerData.ChatID]
 	if !ok {
@@ -60,7 +66,7 @@ func processState(
 			sessions[brokerData.ChatID] = data
 		}
 	case data:
-		err := processFileData(brokerData.Value, fileWriter)
+		err := processFileData(brokerData.Value, fileWriter, extractor)
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)
 		}
@@ -89,7 +95,7 @@ func sendMsgWithErrHandling(
 	return true
 }
 
-func processFileData(rawData string, fileWriter wrInt.Writer) error {
+func processFileData(rawData string, fileWriter fileInt.Writer, extractor fileInt.Extractor) error {
 	if rawData == "" {
 		return errors.New("data is empty")
 	}
@@ -100,12 +106,12 @@ func processFileData(rawData string, fileWriter wrInt.Writer) error {
 		return fmt.Errorf("failed to unmarshal file data: %w", err)
 	}
 
-	fName := ExtractFileName(dto.Name)
+	fName := extractor.ExtractFileName(dto.Name)
 	if fName == "" {
 		return fmt.Errorf("file name '%v' in wrong format", dto.Name)
 	}
 
-	fNum, err := ExtractNumber(dto.Name)
+	fNum, err := extractor.ExtractNumber(dto.Name)
 	if err != nil {
 		return err
 	}
