@@ -9,6 +9,7 @@ import (
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
 	fileInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
+	storageInt "github.com/DOs0x12/FileStorage/internal/interfaces/storage"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,11 +18,12 @@ func Serve(
 	broker brokerInt.MessageBroker,
 	fileWriter fileInt.Writer,
 	extractor fileInt.Extractor,
+	storage storageInt.ReferenceStorage,
 ) {
 	dataChan := broker.StartGetData(ctx)
 
 	for d := range dataChan {
-		processState(ctx, d, broker, fileWriter, extractor)
+		processState(ctx, d, broker, fileWriter, extractor, storage)
 		err := broker.Commit(ctx, d.MessageUuid)
 		if err != nil {
 			logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
@@ -52,6 +54,7 @@ func processState(
 	broker brokerInt.MessageBroker,
 	fileWriter fileInt.Writer,
 	extractor fileInt.Extractor,
+	storage storageInt.ReferenceStorage,
 ) {
 	currSt, ok := sessions[brokerData.ChatID]
 	if !ok {
@@ -66,7 +69,7 @@ func processState(
 			sessions[brokerData.ChatID] = data
 		}
 	case data:
-		err := processFileData(brokerData.Value, fileWriter, extractor)
+		err := processFileData(ctx, brokerData.Value, fileWriter, extractor, storage)
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)
 		}
@@ -95,7 +98,13 @@ func sendMsgWithErrHandling(
 	return true
 }
 
-func processFileData(rawData string, fileWriter fileInt.Writer, extractor fileInt.Extractor) error {
+func processFileData(
+	ctx context.Context,
+	rawData string,
+	fileWriter fileInt.Writer,
+	extractor fileInt.Extractor,
+	storage storageInt.ReferenceStorage,
+) error {
 	if rawData == "" {
 		return errors.New("data is empty")
 	}
@@ -116,9 +125,12 @@ func processFileData(rawData string, fileWriter fileInt.Writer, extractor fileIn
 		return err
 	}
 
-	_ = fNum
-
 	err = fileWriter.Write(dto.Data, fName)
+	if err != nil {
+		return err
+	}
+
+	err = storage.Insert(ctx, fNum, fName)
 	if err != nil {
 		return err
 	}

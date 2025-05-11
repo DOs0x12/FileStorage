@@ -12,6 +12,7 @@ import (
 	brokerInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/broker"
 	"github.com/DOs0x12/FileStorage/internal/infrastructure/config"
 	fileInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/file"
+	storageInfra "github.com/DOs0x12/FileStorage/internal/infrastructure/storage"
 )
 
 func main() {
@@ -54,5 +55,18 @@ func main() {
 	wr := fileInfra.NewWriter(*folderPath)
 	ext := fileDom.Extractor{}
 
-	app.Serve(appCtx, broker, wr, ext)
+	stConf := storageInfra.StorageConf{
+		Address:  conf.StorageAddress,
+		Database: conf.StorageDB,
+		User:     conf.StorageUser,
+		Pass:     conf.StoragePass,
+	}
+	st, err := storageInfra.NewPgRefStorage(appCtx, stConf)
+	if err != nil {
+		logrus.Error("Failed to connect to a storage: ", err)
+
+		return
+	}
+
+	app.Serve(appCtx, broker, wr, ext, st)
 }
