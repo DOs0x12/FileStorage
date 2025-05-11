@@ -1,0 +1,7 @@
+package storage
+
+import "context"
+
+type ReferenceStorage interface {
+	Insert(ctx context.Context, num int64, ref string) error
+}
