@@ -32,7 +32,7 @@ func Serve(ctx context.Context, servSet ServiceSet) {
 
 	for d := range dataChan {
 		if d.CommName == SendComm {
-			processState(ctx, d, servSet)
+			processSendingState(ctx, d, servSet)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 
 			return
@@ -64,7 +64,7 @@ const (
 
 var sessions = make(map[int64]state)
 
-func processState(
+func processSendingState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
 	servSet ServiceSet,
