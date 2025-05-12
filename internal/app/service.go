@@ -5,34 +5,54 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
 	fileInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
 	storageInt "github.com/DOs0x12/FileStorage/internal/interfaces/storage"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 type ServiceSet struct {
-	Broker     brokerInt.MessageBroker
-	FileWriter fileInt.Writer
-	Extractor  fileInt.Extractor
-	Storage    storageInt.ReferenceStorage
+	Broker    brokerInt.MessageBroker
+	File      fileInt.File
+	Extractor fileInt.Extractor
+	Storage   storageInt.ReferenceStorage
 }
+
+var (
+	SendComm = "sendF"
+	GetComm  = "getF"
+)
 
 func Serve(ctx context.Context, servSet ServiceSet) {
 	dataChan := servSet.Broker.StartGetData(ctx)
 
 	for d := range dataChan {
-		processState(ctx, d, servSet)
-		err := servSet.Broker.Commit(ctx, d.MessageUuid)
-		if err != nil {
-			logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", d.MessageUuid.String(), err)
+		if d.CommName == SendComm {
+			processState(ctx, d, servSet)
+			commitMsg(ctx, d.MessageUuid, servSet.Broker)
+
+			return
+		}
+
+		if d.CommName == GetComm {
+			processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, d)
+			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 		}
 	}
 
 	servSet.Broker.Stop()
 	logrus.Info("The application was stopped")
+}
+
+func commitMsg(ctx context.Context, uuid uuid.UUID, br brokerInt.MessageBroker) {
+	err := br.Commit(ctx, uuid)
+	if err != nil {
+		logrus.Errorf("Failed to commit the messsage with UUID: %v: %v", uuid.String(), err)
+	}
 }
 
 type state int
@@ -43,11 +63,6 @@ const (
 )
 
 var sessions = make(map[int64]state)
-
-type FileDto struct {
-	Name,
-	Data string
-}
 
 func processState(
 	ctx context.Context,
@@ -102,6 +117,11 @@ func sendMsgWithErrHandling(
 	return true
 }
 
+type FileDto struct {
+	Name,
+	Data string
+}
+
 func processFileData(
 	ctx context.Context,
 	rawData string,
@@ -127,7 +147,7 @@ func processFileData(
 		return err
 	}
 
-	err = servSet.FileWriter.Write(dto.Data, fName)
+	err = servSet.File.Write(dto.Data, fName)
 	if err != nil {
 		return err
 	}
@@ -138,4 +158,58 @@ func processFileData(
 	}
 
 	return nil
+}
+
+func processFile(
+	ctx context.Context,
+	st storageInt.ReferenceStorage,
+	file fileInt.File,
+	br brokerInt.MessageBroker,
+	brData brokerEnt.BrokerData,
+) {
+	fd, name, err := getFileData(ctx, st, file, brData.Value)
+	if err != nil {
+		logrus.Error(err)
+
+		return
+	}
+
+	dto := FileDto{Name: name, Data: fd}
+	d, err := json.Marshal(dto)
+	if err != nil {
+		logrus.Error("failed to marshal a file DTO for the broker: ", err)
+
+		return
+	}
+
+	dataToSend := brokerEnt.BrokerData{CommName: brData.CommName, ChatID: brData.ChatID, Value: string(d), IsFile: true}
+
+	err = br.SendData(ctx, dataToSend)
+	if err != nil {
+		logrus.Error("failed to send data to the broker: ", err)
+	}
+}
+
+func getFileData(
+	ctx context.Context,
+	st storageInt.ReferenceStorage,
+	file fileInt.File,
+	rawData string,
+) (string, string, error) {
+	id, err := strconv.ParseInt(rawData, 0, 64)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get the ID of a file reference from a broker data: %w", err)
+	}
+
+	ref, err := st.GetReference(ctx, id)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get the file: %w", err)
+	}
+
+	fd, err := file.Read(ref)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get the file data: %w", err)
+	}
+
+	return fd, ref, nil
 }

@@ -68,6 +68,6 @@ func main() {
 		return
 	}
 
-	sSet := app.ServiceSet{Broker: broker, FileWriter: wr, Extractor: ext, Storage: st}
+	sSet := app.ServiceSet{Broker: broker, File: wr, Extractor: ext, Storage: st}
 	app.Serve(appCtx, sSet)
 }
