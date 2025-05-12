@@ -7,4 +7,5 @@ type BrokerData struct {
 	ChatID      int64
 	Value       string
 	MessageUuid uuid.UUID
+	IsFile      bool
 }

@@ -67,6 +67,12 @@ func processState(
 			sessions[brokerData.ChatID] = data
 		}
 	case data:
+		if !brokerData.IsFile {
+			logrus.Error("An incoming message has no file")
+
+			return
+		}
+
 		err := processFileData(ctx, brokerData.Value, servSet)
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)

@@ -42,6 +42,7 @@ func piplineBrockerData(
 			ChatID:      d.ChatID,
 			Value:       d.Value,
 			MessageUuid: d.MessageUuid,
+			IsFile:      d.IsFile,
 		}
 	}
 }
