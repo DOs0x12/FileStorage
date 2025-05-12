@@ -23,8 +23,8 @@ type ServiceSet struct {
 }
 
 var (
-	SendComm = "sendF"
-	GetComm  = "getF"
+	SendComm = "sendf"
+	GetComm  = "getf"
 )
 
 func Serve(ctx context.Context, servSet ServiceSet) {
