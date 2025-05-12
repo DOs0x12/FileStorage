@@ -48,7 +48,7 @@ func NewPgRefStorage(ctx context.Context, conf StorageConf) (PgReferenceStorage,
 	return PgReferenceStorage{connection: conn}, nil
 }
 
-const insertNewRefComm = `INSERT INTO commands (number, reference) VALUES ($1, $2)`
+const insertNewRefComm = `INSERT INTO file_references (number, reference) VALUES ($1, $2)`
 
 func (st PgReferenceStorage) Insert(ctx context.Context, num int64, ref string) error {
 	_, err := st.connection.Exec(ctx, insertNewRefComm, num, ref)
