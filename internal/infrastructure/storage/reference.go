@@ -58,3 +58,18 @@ func (st PgReferenceStorage) Insert(ctx context.Context, num int64, ref string) 
 
 	return nil
 }
+
+const getRefCom = `SELECT reference FROM file_references WHERE number = $1`
+
+func (st PgReferenceStorage) GetReference(ctx context.Context, num int64) (string, error) {
+	row := st.connection.QueryRow(ctx, getRefCom, num)
+
+	var ref string
+
+	err := row.Scan(&ref)
+	if err != nil {
+		return "", fmt.Errorf("failed to read a storage row: %w", err)
+	}
+
+	return ref, nil
+}
