@@ -12,9 +12,9 @@
             "program": "${workspaceFolder}/cmd/",
             "args": [
                 "--conf",
-                "/home/osetrov/receipt-storage/config.yml",
+                "/home/osetrov/receipt-storage-test/config.yml",
                 "--folder",
-                "/home/osetrov/receipt-storage/data"
+                "/home/osetrov/receipt-storage-test/data"
             ],
             "asRoot": true,
             "console": "integratedTerminal"

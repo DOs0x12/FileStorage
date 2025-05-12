@@ -39,7 +39,7 @@ func Serve(ctx context.Context, servSet ServiceSet) {
 		}
 
 		if d.CommName == GetComm {
-			processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, d)
+			processGettingState(ctx, d, servSet)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 		}
 	}
@@ -62,14 +62,14 @@ const (
 	data
 )
 
-var sessions = make(map[int64]state)
+var sendingSessions = make(map[int64]state)
 
 func processSendingState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
 	servSet ServiceSet,
 ) {
-	currSt, ok := sessions[brokerData.ChatID]
+	currSt, ok := sendingSessions[brokerData.ChatID]
 	if !ok {
 		currSt = comm
 	}
@@ -79,7 +79,7 @@ func processSendingState(
 	switch currSt {
 	case comm:
 		if sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, sendingFileMessage) {
-			sessions[brokerData.ChatID] = data
+			sendingSessions[brokerData.ChatID] = data
 		}
 	case data:
 		if !brokerData.IsFile {
@@ -92,7 +92,7 @@ func processSendingState(
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)
 		}
-		delete(sessions, brokerData.ChatID)
+		delete(sendingSessions, brokerData.ChatID)
 	}
 }
 
@@ -212,4 +212,29 @@ func getFileData(
 	}
 
 	return fd, ref, nil
+}
+
+var gettingSessions = make(map[int64]state)
+
+func processGettingState(
+	ctx context.Context,
+	brokerData brokerEnt.BrokerData,
+	servSet ServiceSet,
+) {
+	currSt, ok := gettingSessions[brokerData.ChatID]
+	if !ok {
+		currSt = comm
+	}
+
+	const sendingFileMessage = "Отправь номер файла"
+
+	switch currSt {
+	case comm:
+		if sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, sendingFileMessage) {
+			gettingSessions[brokerData.ChatID] = data
+		}
+	case data:
+		processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, brokerData)
+		delete(gettingSessions, brokerData.ChatID)
+	}
 }
