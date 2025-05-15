@@ -53,13 +53,13 @@ func main() {
 		return
 	}
 
-	getComnName := app.GetComm
+	getCommName := app.GetComm
 	getCommDesc := "Get a receipt file"
 
-	comm = brokerEnt.CommandData{Name: getComnName, Description: getCommDesc}
+	comm = brokerEnt.CommandData{Name: getCommName, Description: getCommDesc}
 	err = broker.RegisterCommand(appCtx, comm, serviceName)
 	if err != nil {
-		logrus.Errorf("Failed to register a command %v in the bot: %v", getComnName, err)
+		logrus.Errorf("Failed to register a command %v in the bot: %v", getCommName, err)
 
 		return
 	}
