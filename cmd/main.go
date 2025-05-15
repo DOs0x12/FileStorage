@@ -64,6 +64,17 @@ func main() {
 		return
 	}
 
+	getAllCommName := app.GetAllComm
+	getAllCommDesc := "Get all files with numbers"
+
+	comm = brokerEnt.CommandData{Name: getAllCommName, Description: getAllCommDesc}
+	err = broker.RegisterCommand(appCtx, comm, serviceName)
+	if err != nil {
+		logrus.Errorf("Failed to register a command %v in the bot: %v", getAllCommName, err)
+
+		return
+	}
+
 	wr := fileInfra.NewWriter(*folderPath)
 	ext := fileDom.Extractor{}
 

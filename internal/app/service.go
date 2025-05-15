@@ -23,8 +23,9 @@ type ServiceSet struct {
 }
 
 var (
-	SendComm = "sendf"
-	GetComm  = "getf"
+	SendComm   = "sendf"
+	GetComm    = "getf"
+	GetAllComm = "getallf"
 )
 
 func Serve(ctx context.Context, servSet ServiceSet) {
@@ -33,6 +34,13 @@ func Serve(ctx context.Context, servSet ServiceSet) {
 	for d := range dataChan {
 		if d.CommName == SendComm {
 			processSendingState(ctx, d, servSet)
+			commitMsg(ctx, d.MessageUuid, servSet.Broker)
+
+			continue
+		}
+
+		if d.CommName == GetComm {
+			processGettingState(ctx, d, servSet)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 
 			continue
