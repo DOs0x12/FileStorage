@@ -57,6 +57,7 @@ func (b MessageBroker) SendData(ctx context.Context, data brokerEnt.BrokerData) 
 		ChatID:      data.ChatID,
 		Value:       data.Value,
 		MessageUuid: data.MessageUuid,
+		IsFile:      data.IsFile,
 	}
 
 	return b.kafkaBroker.SendData(ctx, kBRData)
