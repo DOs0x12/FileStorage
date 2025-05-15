@@ -23,7 +23,9 @@ func (fs fileService) Write(data, fName string) (rErr error) {
 
 	defer func() {
 		err = file.Close()
-		rErr = fmt.Errorf("failed to close file %v: %w", n, err)
+		if err != nil {
+			rErr = fmt.Errorf("failed to close file %v: %w", n, err)
+		}
 	}()
 
 	_, err = file.WriteString(data)
