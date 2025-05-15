@@ -35,7 +35,7 @@ func Serve(ctx context.Context, servSet ServiceSet) {
 			processSendingState(ctx, d, servSet)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 
-			return
+			continue
 		}
 
 		if d.CommName == GetComm {
