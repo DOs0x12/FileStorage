@@ -79,11 +79,11 @@ func processSendingState(
 	servSet ServiceSet,
 ) {
 	currSt, ok := sendingSessions[brokerData.ChatID]
-	if !ok {
+	if !ok || brokerData.Value == "/"+brokerData.CommName {
 		currSt = comm
 	}
 
-	const sendingFileMessage = "Отправь файл для загрузки в хранилище"
+	const sendingFileMessage = "Отправь файл(ы) для загрузки в хранилище"
 
 	switch currSt {
 	case comm:
@@ -101,7 +101,6 @@ func processSendingState(
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)
 		}
-		delete(sendingSessions, brokerData.ChatID)
 	}
 }
 
