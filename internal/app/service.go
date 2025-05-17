@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
@@ -46,8 +47,8 @@ func Serve(ctx context.Context, servSet ServiceSet) {
 			continue
 		}
 
-		if d.CommName == GetComm {
-			processGettingState(ctx, d, servSet)
+		if d.CommName == GetAllComm {
+			processGettingFiles(ctx, d, servSet)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 		}
 	}
@@ -245,4 +246,21 @@ func processGettingState(
 		processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, brokerData)
 		delete(gettingSessions, brokerData.ChatID)
 	}
+}
+
+func processGettingFiles(
+	ctx context.Context,
+	brokerData brokerEnt.BrokerData,
+	servSet ServiceSet,
+) {
+	refs, err := servSet.Storage.GetAllReferences(ctx)
+	if err != nil {
+		logrus.Error("Failed to get all references: ", err)
+
+		return
+	}
+
+	msg := strings.Join(refs, "\n")
+
+	_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, msg)
 }
