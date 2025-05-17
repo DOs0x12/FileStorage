@@ -73,3 +73,35 @@ func (st PgReferenceStorage) GetReference(ctx context.Context, num int64) (strin
 
 	return ref, nil
 }
+
+const getAllRefCom = `SELECT number, reference FROM file_references`
+
+func (st PgReferenceStorage) GetAllReferences(ctx context.Context) ([]string, error) {
+	rows, err := st.connection.Query(ctx, getAllRefCom)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read storage rows: %w", err)
+	}
+
+	defer rows.Close()
+
+	rowCnt := rows.CommandTag().RowsAffected()
+	refs := make([]string, 0, rowCnt)
+
+	var num int64
+	var ref string
+
+	for rows.Next() {
+		if err := rows.Err(); err != nil {
+			return nil, fmt.Errorf("failed to process a row from storage: %w", err)
+		}
+
+		err := rows.Scan(&num, &ref)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse data from the storage: %w", err)
+		}
+
+		refs = append(refs, fmt.Sprintf("%v. %v", num, ref))
+	}
+
+	return refs, nil
+}
