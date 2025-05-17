@@ -84,9 +84,7 @@ func (st PgReferenceStorage) GetAllReferences(ctx context.Context) ([]string, er
 
 	defer rows.Close()
 
-	rowCnt := rows.CommandTag().RowsAffected()
-	refs := make([]string, 0, rowCnt)
-
+	refs := make([]string, 0)
 	var num int64
 	var ref string
 
