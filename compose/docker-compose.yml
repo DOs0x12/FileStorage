@@ -1,0 +1,20 @@
+services:
+  file-storage:
+    image: ${image_name}:v0.0.1
+    build:
+      context: ../
+    restart: unless-stopped
+    networks:
+      - "kafka-network"
+      - "storage-network"
+    volumes:
+      - ${client_data_folder}:/var/lib/telebot
+      - ${data_folder}:/app/data
+      - ${config_path}:/app/config.yml
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+networks:
+  kafka-network:
+    external: true
+  storage-network:
+    external: true
