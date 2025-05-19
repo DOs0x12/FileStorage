@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -79,7 +80,8 @@ func processSendingState(
 	servSet ServiceSet,
 ) {
 	currSt, ok := sendingSessions[brokerData.ChatID]
-	if !ok || brokerData.Value == "/"+brokerData.CommName {
+	rawCommName := []byte("/" + brokerData.CommName)
+	if !ok || slices.Equal(brokerData.Value, rawCommName) {
 		currSt = comm
 	}
 
@@ -113,7 +115,7 @@ func sendMsgWithErrHandling(
 	d := brokerEnt.BrokerData{
 		CommName: brokerData.CommName,
 		ChatID:   brokerData.ChatID,
-		Value:    msg,
+		Value:    []byte(msg),
 	}
 	err := broker.SendData(ctx, d)
 	if err != nil {
@@ -126,21 +128,21 @@ func sendMsgWithErrHandling(
 }
 
 type FileDto struct {
-	Name,
-	Data string
+	Name string
+	Data []byte
 }
 
 func processFileData(
 	ctx context.Context,
-	rawData string,
+	rawData []byte,
 	servSet ServiceSet,
 ) error {
-	if rawData == "" {
+	if len(rawData) == 0 {
 		return errors.New("data is empty")
 	}
 
 	var dto FileDto
-	err := json.Unmarshal([]byte(rawData), &dto)
+	err := json.Unmarshal(rawData, &dto)
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal file data: %w", err)
 	}
@@ -190,7 +192,7 @@ func processFile(
 		return
 	}
 
-	dataToSend := brokerEnt.BrokerData{CommName: brData.CommName, ChatID: brData.ChatID, Value: string(d), IsFile: true}
+	dataToSend := brokerEnt.BrokerData{CommName: brData.CommName, ChatID: brData.ChatID, Value: d, IsFile: true}
 
 	err = br.SendData(ctx, dataToSend)
 	if err != nil {
@@ -202,21 +204,21 @@ func getFileData(
 	ctx context.Context,
 	st storageInt.ReferenceStorage,
 	file fileInt.File,
-	rawData string,
-) (string, string, error) {
-	id, err := strconv.ParseInt(rawData, 0, 64)
+	rawData []byte,
+) ([]byte, string, error) {
+	id, err := strconv.ParseInt(string(rawData), 0, 64)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get the ID of a file reference from a broker data: %w", err)
+		return nil, "", fmt.Errorf("failed to get the ID of a file reference from a broker data: %w", err)
 	}
 
 	ref, err := st.GetReference(ctx, id)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get the file: %w", err)
+		return nil, "", fmt.Errorf("failed to get the file: %w", err)
 	}
 
 	fd, err := file.Read(ref)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get the file data: %w", err)
+		return nil, "", fmt.Errorf("failed to get the file data: %w", err)
 	}
 
 	return fd, ref, nil

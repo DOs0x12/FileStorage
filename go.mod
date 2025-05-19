@@ -3,7 +3,7 @@ module github.com/DOs0x12/FileStorage
 go 1.23.8
 
 require (
-	github.com/DOs0x12/TeleBot/client/v2 v2.0.8-0.20250514150339-951eadaf60fd
+	github.com/DOs0x12/TeleBot/client/v2 v2.0.8-0.20250519072810-eea378d85d7d
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.10.0

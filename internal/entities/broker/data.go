@@ -5,7 +5,7 @@ import "github.com/google/uuid"
 type BrokerData struct {
 	CommName    string
 	ChatID      int64
-	Value       string
+	Value       []byte
 	MessageUuid uuid.UUID
 	IsFile      bool
 }

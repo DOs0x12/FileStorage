@@ -1,6 +1,6 @@
 package file
 
 type File interface {
-	Write(data, fName string) (rErr error)
-	Read(fName string) (string, error)
+	Write(data []byte, fName string) (rErr error)
+	Read(fName string) ([]byte, error)
 }
