@@ -5,22 +5,25 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type Extractor struct{}
 
-var nameRegex = regexp.MustCompile(`^(?:\d+\.\s)?(.+)$`)
+var nameRegex = regexp.MustCompile(`^(?:\d+[._]\s*)?(.+)$`)
 
 func (Extractor) ExtractFileName(val string) string {
 	matches := nameRegex.FindStringSubmatch(val)
 	if len(matches) > 1 {
-		return matches[1]
+		name := matches[1]
+
+		return strings.ReplaceAll(name, "_", " ")
 	}
 
 	return ""
 }
 
-var numRegex = regexp.MustCompile(`^(\d+)\.\s`)
+var numRegex = regexp.MustCompile(`^(\d+)[._]\s*`)
 var ErrWrongFormat = errors.New("string is in wrong format")
 
 func (Extractor) ExtractNumber(val string) (int64, error) {
