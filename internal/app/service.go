@@ -162,13 +162,19 @@ func processFileData(
 		return err
 	}
 
-	err = servSet.File.Write(dto.Data, fName)
+	err = servSet.Storage.Insert(ctx, fNum, fName)
 	if err != nil {
 		return err
 	}
 
-	err = servSet.Storage.Insert(ctx, fNum, fName)
+	err = servSet.File.Write(dto.Data, fName)
 	if err != nil {
+		refErr := servSet.Storage.DeleteReference(ctx, fNum)
+		if refErr != nil {
+			return fmt.Errorf(
+				"cannot delete the reference with the number %v after failing to write file data: %w", fNum, err)
+		}
+
 		return err
 	}
 
