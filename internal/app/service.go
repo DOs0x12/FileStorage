@@ -74,6 +74,8 @@ const (
 
 var sendingSessions = make(map[int64]state)
 
+const failedProcErr = "Не удалось обработать файл"
+
 func processSendingState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
@@ -86,6 +88,7 @@ func processSendingState(
 	}
 
 	const sendingFileMessage = "Отправь файл(ы) для загрузки в хранилище"
+	const noFileUserErr = "Сообщение не содержит файл"
 
 	switch currSt {
 	case comm:
@@ -95,6 +98,7 @@ func processSendingState(
 	case data:
 		if !brokerData.IsFile {
 			logrus.Error("An incoming message has no file")
+			_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, noFileUserErr)
 
 			return
 		}
@@ -102,6 +106,7 @@ func processSendingState(
 		err := processFileData(ctx, brokerData.Value, servSet)
 		if err != nil {
 			logrus.Error("Failed to process file data: ", err)
+			_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, failedProcErr)
 		}
 	}
 }
@@ -176,28 +181,26 @@ func processFile(
 	file fileInt.File,
 	br brokerInt.MessageBroker,
 	brData brokerEnt.BrokerData,
-) {
+) error {
 	fd, name, err := getFileData(ctx, st, file, brData.Value)
 	if err != nil {
-		logrus.Error(err)
-
-		return
+		return err
 	}
 
 	dto := FileDto{Name: name, Data: fd}
 	d, err := json.Marshal(dto)
 	if err != nil {
-		logrus.Error("failed to marshal a file DTO for the broker: ", err)
-
-		return
+		return fmt.Errorf("failed to marshal a file DTO for the broker: %w", err)
 	}
 
 	dataToSend := brokerEnt.BrokerData{CommName: brData.CommName, ChatID: brData.ChatID, Value: d, IsFile: true}
 
 	err = br.SendData(ctx, dataToSend)
 	if err != nil {
-		logrus.Error("failed to send data to the broker: ", err)
+		return fmt.Errorf("failed to send data to the broker: %w", err)
 	}
+
+	return nil
 }
 
 func getFileData(
@@ -244,7 +247,12 @@ func processGettingState(
 			gettingSessions[brokerData.ChatID] = data
 		}
 	case data:
-		processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, brokerData)
+		if err := processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, brokerData); err != nil {
+			logrus.Error(err)
+			_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, failedProcErr)
+
+			return
+		}
 		delete(gettingSessions, brokerData.ChatID)
 	}
 }
@@ -254,14 +262,15 @@ func processGettingFiles(
 	brokerData brokerEnt.BrokerData,
 	servSet ServiceSet,
 ) {
+	const failedGetAllRefErr = "Не удалось получить данные всех файлов"
 	refs, err := servSet.Storage.GetAllReferences(ctx)
 	if err != nil {
 		logrus.Error("Failed to get all references: ", err)
+		_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, failedGetAllRefErr)
 
 		return
 	}
 
 	msg := strings.Join(refs, "\n")
-
 	_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, msg)
 }
