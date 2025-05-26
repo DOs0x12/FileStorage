@@ -14,6 +14,7 @@ func TestExtractFileName(t *testing.T) {
 		expected string
 	}{
 		{"name with number", "3. Some name", "Some name"},
+		{"name with underscores number", "3_Some_name", "Some name"},
 		{"name with big number", "30000. Some name", "Some name"},
 		{"name without number", "Some name", "Some name"},
 		{"empty name", "", ""},
@@ -37,6 +38,7 @@ func TestExtractNumber(t *testing.T) {
 		expErr   error
 	}{
 		{"name with number", "3. Some name", 3, false, nil},
+		{"name with underscores number", "3_Some_name", 3, false, nil},
 		{"name with big number", "30000. Some name", 30000, false, nil},
 		{"name without number", "Some name", 0, true, ErrWrongFormat},
 		{"empty name", "", 0, true, ErrWrongFormat},
