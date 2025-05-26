@@ -1,6 +1,7 @@
 services:
   file-storage:
-    image: ${image_name}:v0.0.1
+    image: file-storage:v0.0.1
+    container_name: ${COMPOSE_PROJECT_NAME}-${container_name}
     build:
       context: ../
     restart: unless-stopped
