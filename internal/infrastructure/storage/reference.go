@@ -74,7 +74,7 @@ func (st PgReferenceStorage) GetReference(ctx context.Context, num int64) (strin
 	return ref, nil
 }
 
-const getAllRefCom = `SELECT number, reference FROM file_references`
+const getAllRefCom = `SELECT number, reference FROM file_references ORDER BY number`
 
 func (st PgReferenceStorage) GetAllReferences(ctx context.Context) ([]string, error) {
 	rows, err := st.connection.Query(ctx, getAllRefCom)
