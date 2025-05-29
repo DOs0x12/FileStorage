@@ -2,17 +2,20 @@ package app
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
 	fileInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
 	storageInt "github.com/DOs0x12/FileStorage/internal/interfaces/storage"
+	"github.com/DOs0x12/TeleBot/server/v2/tmp_storage"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -32,17 +35,20 @@ var (
 
 func Serve(ctx context.Context, servSet ServiceSet) {
 	dataChan := servSet.Broker.StartGetData(ctx)
-
+	sessionSt := tmp_storage.NewTmpStorage()
+	sLifetime := 2 * time.Hour
+	sClPer := 1 * time.Hour
+	sessionSt.StartCleanupOldObjs(ctx, sLifetime, sClPer)
 	for d := range dataChan {
 		if d.CommName == SendComm {
-			processSendingState(ctx, d, servSet)
+			processSendingState(ctx, d, servSet, sessionSt)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 
 			continue
 		}
 
 		if d.CommName == GetComm {
-			processGettingState(ctx, d, servSet)
+			processGettingState(ctx, d, servSet, sessionSt)
 			commitMsg(ctx, d.MessageUuid, servSet.Broker)
 
 			continue
@@ -72,19 +78,22 @@ const (
 	data
 )
 
-var sendingSessions = make(map[int64]state)
-
 const failedProcErr = "Не удалось обработать файл"
 
 func processSendingState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
 	servSet ServiceSet,
+	sessionSt tmp_storage.TmpStorage,
 ) {
-	currSt, ok := sendingSessions[brokerData.ChatID]
+	chatUuid := int64ToUUID(brokerData.ChatID)
+	stObj, ok := sessionSt.GetObj(chatUuid)
+	var currSt state
 	rawCommName := []byte("/" + brokerData.CommName)
 	if !ok || slices.Equal(brokerData.Value, rawCommName) {
 		currSt = comm
+	} else {
+		currSt = stObj.Obj.(state)
 	}
 
 	const sendingFileMessage = "Отправь файл(ы) для загрузки в хранилище"
@@ -93,7 +102,7 @@ func processSendingState(
 	switch currSt {
 	case comm:
 		if sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, sendingFileMessage) {
-			sendingSessions[brokerData.ChatID] = data
+			sessionSt.AddObjByUuid(data, chatUuid)
 		}
 	case data:
 		if !brokerData.IsFile {
@@ -109,6 +118,13 @@ func processSendingState(
 			_ = sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, failedProcErr)
 		}
 	}
+}
+
+func int64ToUUID(id int64) uuid.UUID {
+	idBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(idBytes, uint64(id))
+	namespace := uuid.NameSpaceOID // Can be any UUID
+	return uuid.NewSHA1(namespace, idBytes)
 }
 
 func sendMsgWithErrHandling(
@@ -227,16 +243,19 @@ func getFileData(
 	return fd, ref, nil
 }
 
-var gettingSessions = make(map[int64]state)
-
 func processGettingState(
 	ctx context.Context,
 	brokerData brokerEnt.BrokerData,
 	servSet ServiceSet,
+	sessionSt tmp_storage.TmpStorage,
 ) {
-	currSt, ok := gettingSessions[brokerData.ChatID]
+	chatUuid := int64ToUUID(brokerData.ChatID)
+	stObj, ok := sessionSt.GetObj(chatUuid)
+	var currSt state
 	if !ok {
 		currSt = comm
+	} else {
+		currSt = stObj.Obj.(state)
 	}
 
 	const sendingFileMessage = "Отправь номер файла"
@@ -244,7 +263,7 @@ func processGettingState(
 	switch currSt {
 	case comm:
 		if sendMsgWithErrHandling(ctx, brokerData, servSet.Broker, sendingFileMessage) {
-			gettingSessions[brokerData.ChatID] = data
+			sessionSt.AddObjByUuid(data, chatUuid)
 		}
 	case data:
 		if err := processFile(ctx, servSet.Storage, servSet.File, servSet.Broker, brokerData); err != nil {
@@ -253,7 +272,7 @@ func processGettingState(
 
 			return
 		}
-		delete(gettingSessions, brokerData.ChatID)
+		sessionSt.DelObj(chatUuid)
 	}
 }
 
