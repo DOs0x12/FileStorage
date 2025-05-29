@@ -3,9 +3,11 @@ package broker
 import (
 	"context"
 	"fmt"
+	"time"
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
 	"github.com/DOs0x12/TeleBot/client/v2/broker"
+	"github.com/DOs0x12/TeleBot/server/v2/retry"
 	"github.com/google/uuid"
 )
 
@@ -60,7 +62,12 @@ func (b MessageBroker) SendData(ctx context.Context, data brokerEnt.BrokerData) 
 		IsFile:      data.IsFile,
 	}
 
-	return b.kafkaBroker.SendData(ctx, kBRData)
+	sendFunc := func(ctx context.Context) error {
+		return b.kafkaBroker.SendData(ctx, kBRData)
+	}
+	rCnt := 5
+	rDel := 1 * time.Second
+	return retry.ExecuteWithRetries(ctx, sendFunc, rCnt, rDel)
 }
 
 func (b MessageBroker) RegisterCommand(
@@ -69,8 +76,12 @@ func (b MessageBroker) RegisterCommand(
 	serviceName string,
 ) error {
 	kBRComData := broker.BrokerCommandData{Name: commData.Name, Description: commData.Description}
-
-	return b.kafkaBroker.RegisterCommand(ctx, kBRComData, serviceName)
+	regFunc := func(ctx context.Context) error {
+		return b.kafkaBroker.RegisterCommand(ctx, kBRComData, serviceName)
+	}
+	rCnt := 5
+	rDel := 1 * time.Second
+	return retry.ExecuteWithRetries(ctx, regFunc, rCnt, rDel)
 }
 
 func (b MessageBroker) Stop() {
