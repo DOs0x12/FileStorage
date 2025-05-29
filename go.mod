@@ -11,7 +11,7 @@ require (
 )
 
 require (
-	github.com/DOs0x12/TeleBot/server/v2 v2.1.1-0.20250529084521-be00f73ee971 // indirect
+	github.com/DOs0x12/TeleBot/server/v2 v2.1.1-0.20250529112836-d07efb17dc7a // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
