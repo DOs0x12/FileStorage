@@ -8,6 +8,10 @@ github.com/DOs0x12/TeleBot/client/v2 v2.0.8-0.20250519072810-eea378d85d7d h1:/wu
 github.com/DOs0x12/TeleBot/client/v2 v2.0.8-0.20250519072810-eea378d85d7d/go.mod h1:5X+zvNvNUi3vRDzG8yDR9j/vYlIN3oOsowe4rcJjZC8=
 github.com/DOs0x12/TeleBot/server/v2 v2.1.0 h1:WhoyTuVzn8pGdbH2F/YioR9WbTvwl5GWoAn2FutjQ+k=
 github.com/DOs0x12/TeleBot/server/v2 v2.1.0/go.mod h1:g8RTA/UlHfEYn/enKXvky4MMgbi+m6EMsxAHmQFL40M=
+github.com/DOs0x12/TeleBot/server/v2 v2.1.1-0.20250529084521-be00f73ee971 h1:1Ftwb4eCJI/otpEAU3UdHEM6pEYg/ym507fLPbZvWkQ=
+github.com/DOs0x12/TeleBot/server/v2 v2.1.1-0.20250529084521-be00f73ee971/go.mod h1:msBhoTleVAtsFlrnLw3r8k9YbSyaRyOQb8uGPhKQSCQ=
+github.com/DOs0x12/TeleBot/server/v2 v2.1.1-0.20250529112836-d07efb17dc7a h1:pd/DYePuZVx658rTr6HjaofdlqdI3U8d4/Npig864YA=
+github.com/DOs0x12/TeleBot/server/v2 v2.1.1-0.20250529112836-d07efb17dc7a/go.mod h1:msBhoTleVAtsFlrnLw3r8k9YbSyaRyOQb8uGPhKQSCQ=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
