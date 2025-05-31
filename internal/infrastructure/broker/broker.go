@@ -6,8 +6,8 @@ import (
 	"time"
 
 	brokerEnt "github.com/DOs0x12/FileStorage/internal/entities/broker"
-	"github.com/DOs0x12/TeleBot/client/v2/broker"
-	"github.com/DOs0x12/TeleBot/server/v2/retry"
+	"github.com/DOs0x12/TeleBot/client/v3/broker"
+	"github.com/DOs0x12/TeleBot/server/v3/retry"
 	"github.com/google/uuid"
 )
 

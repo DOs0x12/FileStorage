@@ -15,7 +15,7 @@ import (
 	brokerInt "github.com/DOs0x12/FileStorage/internal/interfaces/broker"
 	fileInt "github.com/DOs0x12/FileStorage/internal/interfaces/file"
 	storageInt "github.com/DOs0x12/FileStorage/internal/interfaces/storage"
-	"github.com/DOs0x12/TeleBot/server/v2/tmp_storage"
+	"github.com/DOs0x12/TeleBot/server/v3/tmp_storage"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
