@@ -137,3 +137,14 @@ func (st PgReferenceStorage) GetAllReferences(ctx context.Context) ([]string, er
 
 	return refs, nil
 }
+
+const delRefCom = `DELETE FROM file_references WHERE num = $1`
+
+func (st PgReferenceStorage) DeleteReference(ctx context.Context, num int64) error {
+	_, err := st.connection.Exec(ctx, delRefCom, num)
+	if err != nil {
+		return fmt.Errorf("failed to delete storage row with the number %v: %w", num, err)
+	}
+
+	return nil
+}
