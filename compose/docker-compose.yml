@@ -1,6 +1,6 @@
 services:
   file-storage:
-    image: file-storage:v0.0.1
+    image: file-storage:v0.0.2
     container_name: ${COMPOSE_PROJECT_NAME}-${container_name}
     build:
       context: ../
