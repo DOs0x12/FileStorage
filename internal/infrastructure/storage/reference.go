@@ -3,7 +3,10 @@ package bd
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/DOs0x12/TeleBot/server/v2/retry"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,12 +38,23 @@ func NewPgRefStorage(ctx context.Context, conf StorageConf) (PgReferenceStorage,
 		return PgReferenceStorage{}, fmt.Errorf("the config for the database was not parsed: %v", err)
 	}
 
-	conn, err := pgxpool.NewWithConfig(ctx, connConf)
+	var conn *pgxpool.Pool
+	connFunc := func(ctx context.Context) error {
+		conn, err = pgxpool.NewWithConfig(ctx, connConf)
+		return err
+	}
+	rCnt := 5
+	rDel := 1 * time.Second
+	err = retry.ExecuteWithRetries(ctx, connFunc, rCnt, rDel)
 	if err != nil {
 		return PgReferenceStorage{}, fmt.Errorf("failed to connect to the storage server: %w", err)
 	}
 
-	_, err = conn.Exec(ctx, tableComm)
+	execFunc := func(ctx context.Context) error {
+		_, err = conn.Exec(ctx, tableComm)
+		return err
+	}
+	err = retry.ExecuteWithRetries(ctx, execFunc, rCnt, rDel)
 	if err != nil {
 		return PgReferenceStorage{}, fmt.Errorf("failed to create a table in the storage: %w", err)
 	}
@@ -51,7 +65,13 @@ func NewPgRefStorage(ctx context.Context, conf StorageConf) (PgReferenceStorage,
 const insertNewRefComm = `INSERT INTO file_references (number, reference) VALUES ($1, $2)`
 
 func (st PgReferenceStorage) Insert(ctx context.Context, num int64, ref string) error {
-	_, err := st.connection.Exec(ctx, insertNewRefComm, num, ref)
+	execFunc := func(ctx context.Context) error {
+		_, err := st.connection.Exec(ctx, insertNewRefComm, num, ref)
+		return err
+	}
+	rCnt := 5
+	rDel := 1 * time.Second
+	err := retry.ExecuteWithRetries(ctx, execFunc, rCnt, rDel)
 	if err != nil {
 		return fmt.Errorf("failed to insert data into the storage: %w", err)
 	}
@@ -65,8 +85,13 @@ func (st PgReferenceStorage) GetReference(ctx context.Context, num int64) (strin
 	row := st.connection.QueryRow(ctx, getRefCom, num)
 
 	var ref string
-
-	err := row.Scan(&ref)
+	scanFunc := func(ctx context.Context) error {
+		err := row.Scan(&ref)
+		return err
+	}
+	rCnt := 5
+	rDel := 1 * time.Second
+	err := retry.ExecuteWithRetries(ctx, scanFunc, rCnt, rDel)
 	if err != nil {
 		return "", fmt.Errorf("failed to read a storage row: %w", err)
 	}
@@ -77,7 +102,16 @@ func (st PgReferenceStorage) GetReference(ctx context.Context, num int64) (strin
 const getAllRefCom = `SELECT number, reference FROM file_references ORDER BY number`
 
 func (st PgReferenceStorage) GetAllReferences(ctx context.Context) ([]string, error) {
-	rows, err := st.connection.Query(ctx, getAllRefCom)
+	var rows pgx.Rows
+	queryFunc := func(ctx context.Context) error {
+		var err error
+		rows, err = st.connection.Query(ctx, getAllRefCom)
+		return err
+	}
+	rCnt := 5
+	rDel := 1 * time.Second
+	err := retry.ExecuteWithRetries(ctx, queryFunc, rCnt, rDel)
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to read storage rows: %w", err)
 	}
