@@ -41,22 +41,28 @@ func Serve(ctx context.Context, servSet ServiceSet) {
 	sessionSt.StartCleanupOldObjs(ctx, sLifetime, sClPer)
 	for d := range dataChan {
 		if d.CommName == SendComm {
-			processSendingState(ctx, d, servSet, sessionSt)
-			commitMsg(ctx, d.MessageUuid, servSet.Broker)
+			go func() {
+				processSendingState(ctx, d, servSet, sessionSt)
+				commitMsg(ctx, d.MessageUuid, servSet.Broker)
+			}()
 
 			continue
 		}
 
 		if d.CommName == GetComm {
-			processGettingState(ctx, d, servSet, sessionSt)
-			commitMsg(ctx, d.MessageUuid, servSet.Broker)
+			go func() {
+				processGettingState(ctx, d, servSet, sessionSt)
+				commitMsg(ctx, d.MessageUuid, servSet.Broker)
+			}()
 
 			continue
 		}
 
 		if d.CommName == GetAllComm {
-			processGettingFiles(ctx, d, servSet)
-			commitMsg(ctx, d.MessageUuid, servSet.Broker)
+			go func() {
+				processGettingFiles(ctx, d, servSet)
+				commitMsg(ctx, d.MessageUuid, servSet.Broker)
+			}()
 		}
 	}
 
